@@ -36,19 +36,24 @@ js = """
             console.log({'result': r});
         };
         var new_message = function (msg) {
-            console.log({'new_message': msg});
-            $('#msg').val(msg);
+            console.log({'new_message': msg[0][0]});
+            $('#msg').val(msg[0][0]);
         };
-        var socket;
+        var {{ name }};
         $(function () {
-            socket = new $.JsonRpcClient(
-            {'socketUrl': 'ws://' + window.location.host + '/{{ name }}/ws'});
-            socket.call(
-                'get_message', [], function (msg) { $('#msg').val(msg); },
-                ecb);
-            socket.call('new_message.connect', [], new_message, ecb, true);
-            $('#msg').on('change', function () {
-                socket.call('set_message', [$('#msg').val(), ], rcb, ecb);
+            {{ name }} = new RPCObject('{{ name }}');
+            $({{ name }}).on('wsrpc_built', function () {
+
+                {{ name }}.get_message().then(
+                    function (msg) { $('#msg').val(msg); }, ecb);
+
+                // there is no easy way to handle signals yet
+                {{ name }}._socket.call(
+                    'new_message.connect', [], new_message, ecb, true);
+
+                $('#msg').on('change', function () {
+                    {{ name }}.set_message($('#msg').val()).then(rcb, ecb);
+                });
             });
         });
 """
@@ -60,6 +65,8 @@ template = """
         <script src="{{url_for('static', filename='js/jquery-2.1.0.js')}}" type="text/javascript"></script>
         <script src="{{url_for('static', filename='js/jquery.json-2.4.js')}}" type="text/javascript"></script>
         <script src="{{url_for('static', filename='js/jquery.jsonrpcclient.js')}}" type="text/javascript"></script>
+        <script src="{{url_for('static', filename='js/bluebird.js')}}" type="text/javascript"></script>
+        <script src="{{url_for('static', filename='js/rpcobject.js')}}" type="text/javascript"></script>
         {% if css is defined %}
             <style type="text/css">
             {{ css }}
