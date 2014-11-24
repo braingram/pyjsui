@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-import inspect
-
 import flask
 
 import wsrpc
@@ -12,23 +10,6 @@ def rename(name):
         func.func_name = name
         return func
     return wrap
-
-
-def build_function_spec(o, s=None):
-    if s is None:
-        s = {}
-    for k in dir(o):
-        if k[0] == '_':
-            continue
-        a = getattr(o, k)
-        if inspect.ismethod(a):
-            arg_spec = inspect.getargspec(a)
-            s[k] = arg_spec.args
-        elif hasattr(a, '__init__'):
-            ss = build_function_spec(a)
-            if len(ss):
-                s[k] = ss
-    return s
 
 
 def make_blueprint(spec):
@@ -43,12 +24,6 @@ def make_blueprint(spec):
         spec['object'], spec['name'] + '/ws',
         encoder=spec.get('encoder', None), decoder=spec.get('decoder', None))
 
-    if 'functions' not in spec:
-        spec['functions'] = build_function_spec(spec['object'])
-
-    @bp.route('/functions')
-    def functions():
-        return flask.jsonify(spec['functions'])
     if 'css' in spec:
         @bp.route('/css')
         def css():
